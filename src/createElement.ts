@@ -1,13 +1,4 @@
-export type ElementType = string | ((props: Props) => Element)
-export type Props = {
-  children?: Array<Element>
-  [key: string]: unknown
-}
-
-export interface Element {
-  type: ElementType
-  props: Props
-}
+import { Element, ElementType, Props } from './types'
 
 export function createElement({
   type,
