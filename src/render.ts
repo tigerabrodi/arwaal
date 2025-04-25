@@ -2,10 +2,39 @@ import { updateDom } from './dom'
 import { performUnitOfWork } from './fiber'
 import { Element, Fiber } from './types'
 
+export let wipFiber: Fiber | null = null
+
+export let hookIndex: number = 0
 export let nextUnitOfWork: Fiber | null = null
 export let currentRoot: Fiber | null = null
 export let wipRoot: Fiber | null = null
 export let deletions: Array<Fiber> = []
+
+// Add setter functions for variables that need to be modified from outside
+export function setWipRoot(newWipRoot: Fiber | null): void {
+  wipRoot = newWipRoot
+}
+
+export function setWipFiber(newWipFiber: Fiber | null): void {
+  wipFiber = newWipFiber
+}
+
+export function resetWipFiberHooks(): void {
+  wipFiber!.hooks = []
+  hookIndex = 0
+}
+
+export function setNextUnitOfWork(newNextUnitOfWork: Fiber | null): void {
+  nextUnitOfWork = newNextUnitOfWork
+}
+
+export function setDeletions(newDeletions: Array<Fiber>): void {
+  deletions = newDeletions
+}
+
+export function incrementHookIndex(): void {
+  hookIndex++
+}
 
 /**
  * Renders an element into a container
