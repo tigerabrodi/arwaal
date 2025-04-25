@@ -1,6 +1,6 @@
 // src/dom.test.ts
 import { describe, expect, it, vi } from 'vitest'
-import { createDom, updateDom } from './dom'
+import { createDom, updateDom } from '../dom'
 
 describe('DOM operations', () => {
   describe('createDom', () => {
