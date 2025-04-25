@@ -1,23 +1,30 @@
-function setupCounter(element: HTMLButtonElement) {
-  let counter = 0
-  const setCounter = (count: number) => {
-    counter = count
-    element.innerHTML = `count is ${counter}`
-  }
-  element.addEventListener('click', () => setCounter(counter + 1))
-  setCounter(0)
+import { Arwaal } from './lib'
+
+function Counter() {
+  const [count, setCount] = Arwaal.useState({ initial: 0 })
+
+  return Arwaal.createElement({
+    type: 'div',
+    props: {},
+    children: [
+      Arwaal.createElement({
+        type: 'h1',
+        props: {},
+        children: [`Count: ${count}`],
+      }),
+      Arwaal.createElement({
+        type: 'button',
+        props: { onClick: () => setCount((c) => c + 1) },
+        children: ['Increment'],
+      }),
+    ],
+  })
 }
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+const element = Arwaal.createElement({
+  type: Counter,
+  props: {},
+})
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+const container = document.getElementById('app')
+Arwaal.render({ element, container: container! })
