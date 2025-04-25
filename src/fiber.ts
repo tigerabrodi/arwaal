@@ -1,27 +1,56 @@
-import { Element } from './createElement'
 import { createDom } from './dom'
-import { getNextUnitOfWork } from './helpers'
-import { deletions } from './render'
-import { Fiber } from './types'
+import { deletions, resetWipFiberHooks, setWipFiber } from './render'
+import { Element, Fiber, Props } from './types'
 
 /**
  * Processes a single unit of work and returns the next unit
  */
 export function performUnitOfWork({ fiber }: { fiber: Fiber }): Fiber | null {
-  // Create DOM node if it doesn't exist
+  const isFunctionComponent = typeof fiber.type === 'function'
+
+  if (isFunctionComponent) {
+    updateFunctionComponent({ fiber })
+  } else {
+    updateHostComponent({ fiber })
+  }
+
+  if (fiber.child) return fiber.child
+
+  let nextFiber: Fiber | null = fiber
+  while (nextFiber) {
+    if (nextFiber.sibling) return nextFiber.sibling
+    nextFiber = nextFiber.parent
+  }
+
+  return null
+}
+
+function updateHostComponent({ fiber }: { fiber: Fiber }): void {
+  // Safety net to ensure every fiber has a dom
+  // Here we know it is not a function component, so we can safely create a dom element
   if (!fiber.dom) {
     fiber.dom = createDom({ fiber })
   }
 
-  // Create fibers for children
-  const elements = fiber.props.children || []
   reconcileChildren({
     wipFiber: fiber,
-    elements,
+    elements: fiber.props.children || [],
   })
+}
 
-  // Return next unit of work - first child, then sibling, then uncle
-  return getNextUnitOfWork(fiber)
+function updateFunctionComponent({ fiber }: { fiber: Fiber }): void {
+  setWipFiber(fiber)
+  resetWipFiberHooks()
+
+  // For function components, we need to call the function to get the children
+  // If you've seen function components before, you know they return an element
+  // Or actually they return an array of elements
+  const children = [(fiber.type as (props: Props) => Element)(fiber.props)]
+
+  reconcileChildren({
+    wipFiber: fiber,
+    elements: children,
+  })
 }
 
 /**
