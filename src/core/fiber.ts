@@ -38,6 +38,9 @@ function updateHostComponent({ fiber }: { fiber: Fiber }): void {
   })
 }
 
+// Each function component becomes a new wip fiber
+// This is the "component" we're in and working on
+// This helps us understand where to push e.g. hooks etc.
 function updateFunctionComponent({ fiber }: { fiber: Fiber }): void {
   setWipFiber(fiber)
   resetWipFiberHooks()
