@@ -1,7 +1,7 @@
 import { hookIndex, incrementHookIndex, wipFiber } from '../render'
 import { Fiber, Hook } from '../types'
 
-interface EffectHook extends Hook {
+export type EffectHook = Hook & {
   effect: () => void | (() => void)
   cleanup: (() => void) | undefined
   deps: Array<unknown> | undefined
@@ -53,18 +53,22 @@ export function runEffects(fiber: Fiber): void {
 
   // Run cleanup functions first
   fiber.hooks.forEach((hook) => {
-    const effectHook = hook as EffectHook
-    if (effectHook.cleanup) {
-      effectHook.cleanup()
+    if (isEffectHook(hook) && hook.cleanup) {
+      hook.cleanup()
     }
   })
 
   // Run effects
   fiber.hooks.forEach((hook) => {
-    const effectHook = hook as EffectHook
-    const cleanup = effectHook.effect()
-    if (cleanup && typeof cleanup === 'function') {
-      effectHook.cleanup = cleanup
+    if (isEffectHook(hook)) {
+      const cleanup = hook.effect()
+      if (cleanup && typeof cleanup === 'function') {
+        hook.cleanup = cleanup
+      }
     }
   })
+}
+
+export function isEffectHook(hook: Hook): hook is EffectHook {
+  return 'effect' in hook && 'cleanup' in hook
 }

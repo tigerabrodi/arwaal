@@ -1,6 +1,6 @@
 import { updateDom } from './dom'
 import { performUnitOfWork } from './fiber'
-import { runEffects } from './hooks'
+import { isEffectHook, runEffects } from './hooks'
 import { Element, Fiber } from './types'
 
 export let wipFiber: Fiber | null = null
@@ -98,12 +98,32 @@ function commitRoot(): void {
   // Commit the work
   commitWork({ fiber: wipRoot!.child })
 
-  // Run effects after committing the work
-  runEffects(wipRoot!)
+  // Run effects recursively on all fibers after DOM updates
+  runEffectsRecursively(wipRoot!)
 
   currentRoot = wipRoot
 
   wipRoot = null
+}
+
+/**
+ * Recursively runs effects on a fiber and its children
+ */
+function runEffectsRecursively(fiber: Fiber): void {
+  // Run effects on current fiber if it has hooks
+  if (fiber.hooks && fiber.hooks.length > 0) {
+    runEffects(fiber)
+  }
+
+  // Recursively run effects on children
+  if (fiber.child) {
+    runEffectsRecursively(fiber.child)
+  }
+
+  // Recursively run effects on siblings
+  if (fiber.sibling) {
+    runEffectsRecursively(fiber.sibling)
+  }
 }
 
 /**
@@ -150,11 +170,20 @@ function commitDeletion({
   fiber: Fiber
   domParent: HTMLElement | Text
 }): void {
+  // Run cleanup for any hooks before removing the component
+  if (fiber.hooks) {
+    fiber.hooks.forEach((hook) => {
+      if (isEffectHook(hook) && hook.cleanup) {
+        hook.cleanup()
+      }
+    })
+  }
+
   if (fiber.dom) {
     domParent.removeChild(fiber.dom)
-  } else {
+  } else if (fiber.child) {
     commitDeletion({
-      fiber: fiber.child!,
+      fiber: fiber.child,
       domParent,
     })
   }
