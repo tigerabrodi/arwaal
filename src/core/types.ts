@@ -37,6 +37,9 @@ export type RefHook<T> = BrandedHook<{ current: T | null }, 'ref'>
 export type CallbackHook<T> = BrandedHook<T, 'callback'> & {
   deps: Array<unknown> | undefined
 }
+export type MemoHook<T> = BrandedHook<T, 'memo'> & {
+  deps: Array<unknown> | undefined
+}
 
 // Fiber does NOT use a generic parameter since it contains hooks with different state types
 export interface Fiber {
