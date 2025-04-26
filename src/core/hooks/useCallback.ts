@@ -11,7 +11,9 @@ export function isCallbackHook(hook: unknown): hook is CallbackHook<unknown> {
   )
 }
 
-export function useCallback<T extends (...args: Array<unknown>) => unknown>(
+// More flexible type signature for useCallback
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useCallback<T extends (...args: Array<any>) => any>(
   callback: T,
   deps?: Array<unknown>
 ): T {
