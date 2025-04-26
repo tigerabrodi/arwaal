@@ -7,16 +7,18 @@ import {
   setWipRoot,
   wipFiber,
 } from '../render'
-import { Hook } from '../types'
+import { ExtendedHook } from '../types'
 
 export function useState<T>({
   initial,
 }: {
   initial: T
 }): [T, (action: (state: T) => T) => void] {
-  const oldHook = wipFiber?.alternate?.hooks?.[hookIndex]
+  const oldHook = wipFiber?.alternate?.hooks?.[hookIndex] as
+    | ExtendedHook<T>
+    | undefined
 
-  const hook: Hook = {
+  const hook: ExtendedHook<T> = {
     state: oldHook ? oldHook.state : initial,
     queue: [],
   }
@@ -26,12 +28,12 @@ export function useState<T>({
   // Call all the actions on the old hook
   // This gives us the initial state for the new hook
   actions.forEach((action) => {
-    hook.state = action(hook.state as T)
+    hook.state = action(hook.state)
   })
 
   const setState = (action: (state: T) => T): void => {
     // Push new action to the queue
-    hook.queue.push(action as (state: unknown) => unknown)
+    hook.queue.push(action)
 
     // Schedule a new render
     // Clone of the current root but a new reference
@@ -50,8 +52,8 @@ export function useState<T>({
     setDeletions([])
   }
 
-  wipFiber!.hooks!.push(hook)
+  wipFiber!.hooks!.push(hook as ExtendedHook<unknown>)
   incrementHookIndex()
 
-  return [hook.state as T, setState]
+  return [hook.state, setState]
 }

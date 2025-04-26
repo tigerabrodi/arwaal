@@ -1,41 +1,52 @@
 import { hookIndex, incrementHookIndex, wipFiber } from '../render'
-import { Fiber, Hook } from '../types'
+import { ExtendedHook, Fiber } from '../types'
 
-export type EffectHook = Hook & {
+// Effect hook extends ExtendedHook with null state
+export interface EffectHook extends ExtendedHook {
   effect: () => void | (() => void)
   cleanup: (() => void) | undefined
   deps: Array<unknown> | undefined
+}
+
+// Type guard to check if a hook is an EffectHook
+export function isEffectHook(hook: ExtendedHook): hook is EffectHook {
+  return 'effect' in hook && typeof hook.effect === 'function'
 }
 
 export function useEffect(
   effect: () => void | (() => void),
   deps?: Array<unknown>
 ): void {
+  // Cast to specific hook type
   const oldHook = wipFiber?.alternate?.hooks?.[hookIndex] as
     | EffectHook
     | undefined
 
   const hook: EffectHook = {
-    state: null,
-    queue: [],
+    state: null, // Effect hooks don't use state
+    queue: [], // Effect hooks don't use queue
     effect,
     cleanup: undefined,
     deps,
   }
 
   if (oldHook) {
-    // If no deps provided, always run effect
-    // If deps provided, check if they've changed
-    const hasDepsChanged =
-      !deps || !oldHook.deps || deps.some((dep, i) => dep !== oldHook.deps?.[i])
+    if (isEffectHook(oldHook)) {
+      // If no deps provided, always run effect
+      // If deps provided, check if they've changed
+      const hasDepsChanged =
+        !deps ||
+        !oldHook.deps ||
+        deps.some((dep, i) => dep !== oldHook.deps?.[i])
 
-    if (hasDepsChanged) {
-      // Save cleanup function for later execution
-      hook.cleanup = oldHook.cleanup
-    } else {
-      // No change in deps, skip this effect
-      hook.cleanup = oldHook.cleanup
-      hook.effect = oldHook.effect
+      if (hasDepsChanged) {
+        // Save cleanup function for later execution
+        hook.cleanup = oldHook.cleanup
+      } else {
+        // No change in deps, skip this effect
+        hook.cleanup = oldHook.cleanup
+        hook.effect = oldHook.effect
+      }
     }
   }
 
@@ -67,8 +78,4 @@ export function runEffects(fiber: Fiber): void {
       }
     }
   })
-}
-
-export function isEffectHook(hook: Hook): hook is EffectHook {
-  return 'effect' in hook && 'cleanup' in hook
 }

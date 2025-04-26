@@ -10,6 +10,16 @@ export interface Element {
   props: Props
 }
 
+export interface Hook<State = unknown> {
+  state: State
+  queue: Array<(state: State) => State>
+}
+
+export interface ExtendedHook<State = unknown> extends Hook<State> {
+  [key: string]: unknown
+}
+
+// Fiber does NOT use a generic parameter since it contains hooks with different state types
 export interface Fiber {
   type: ElementType
   props: Props
@@ -19,10 +29,5 @@ export interface Fiber {
   sibling: Fiber | null
   alternate: Fiber | null
   effectTag?: 'PLACEMENT' | 'UPDATE' | 'DELETION'
-  hooks?: Array<Hook>
-}
-
-export interface Hook {
-  state: unknown
-  queue: Array<(state: unknown) => unknown>
+  hooks?: Array<ExtendedHook> // Can contain hooks with different state types and properties
 }
