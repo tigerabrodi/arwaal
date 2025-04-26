@@ -6,8 +6,8 @@ import {
   setNextUnitOfWork,
   setWipRoot,
   wipFiber,
-} from './render'
-import { Hook } from './types'
+} from '../render'
+import { Hook } from '../types'
 
 export function useState<T>({
   initial,
@@ -21,12 +21,12 @@ export function useState<T>({
     queue: [],
   }
 
-  const actions = oldHook?.queue || []
+  const actions = (oldHook?.queue || []) as Array<(state: T) => T>
 
   // Call all the actions on the old hook
   // This gives us the initial state for the new hook
   actions.forEach((action) => {
-    hook.state = (action as (state: T) => T)(hook.state as T)
+    hook.state = action(hook.state as T)
   })
 
   const setState = (action: (state: T) => T): void => {

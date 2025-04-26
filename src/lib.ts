@@ -1,6 +1,6 @@
-import { createElement } from './createElement'
-import { render } from './render'
-import { useState } from './useState'
+import { createElement } from './core/createElement'
+import { useState } from './core/hooks/useState'
+import { render } from './core/render'
 
 export { createElement, render, useState }
 
