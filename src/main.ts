@@ -3,14 +3,14 @@ import { Arwaal } from './lib'
 function Counter() {
   const [count, setCount] = Arwaal.useState({ initial: 0 })
 
+  // always run when count
   Arwaal.useEffect(() => {
     console.log('Count:', count)
-    ref.current = count
   }, [count])
 
-  const ref = Arwaal.useRef<number>(null)
-
-  console.log('Ref:', ref)
+  Arwaal.useEffect(() => {
+    console.log('only runs once')
+  }, [])
 
   return Arwaal.createElement({
     type: 'div',

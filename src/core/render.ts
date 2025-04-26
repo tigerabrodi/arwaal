@@ -1,6 +1,6 @@
 import { updateDom } from './dom'
 import { performUnitOfWork } from './fiber'
-import { isEffectHook, runEffects } from './hooks'
+import { EffectHook, isEffectHook, shouldRunEffect } from './hooks'
 import { Element, Fiber } from './types'
 
 export let wipFiber: Fiber | null = null
@@ -112,7 +112,36 @@ function commitRoot(): void {
 function runEffectsRecursively(fiber: Fiber): void {
   // Run effects on current fiber if it has hooks
   if (fiber.hooks && fiber.hooks.length > 0) {
-    runEffects(fiber)
+    // Check if we have a previous fiber with hooks
+    const prevFiber = fiber.alternate
+
+    // Process each hook individually
+    fiber.hooks.forEach((hook, index) => {
+      if (!isEffectHook(hook)) return
+
+      const effectHook = hook
+      const prevHook = prevFiber?.hooks?.[index] as EffectHook | undefined
+
+      // Use the imported shouldRunEffect function instead of inline logic
+      const shouldRun = shouldRunEffect({
+        currentHook: effectHook,
+        previousHook: prevHook,
+      })
+
+      // Run cleanup if needed (only if we're about to run the effect or unmounting)
+      if (shouldRun && effectHook.cleanup) {
+        effectHook.cleanup()
+        effectHook.cleanup = undefined
+      }
+
+      // Run effect if dependencies changed
+      if (shouldRun) {
+        const cleanup = effectHook.effect()
+        if (cleanup && typeof cleanup === 'function') {
+          effectHook.cleanup = cleanup
+        }
+      }
+    })
   }
 
   // Recursively run effects on children

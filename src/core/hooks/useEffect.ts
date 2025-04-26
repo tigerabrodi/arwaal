@@ -13,6 +13,28 @@ export function isEffectHook(hook: ExtendedHook): hook is EffectHook {
   return 'effect' in hook && typeof hook.effect === 'function'
 }
 
+// Determine if an effect should run based on its dependencies
+export function shouldRunEffect({
+  currentHook,
+  previousHook,
+}: {
+  currentHook: EffectHook
+  previousHook?: EffectHook
+}): boolean {
+  // Always run if it's the first time or no deps array was provided
+  if (!previousHook || !currentHook.deps) {
+    return true
+  }
+
+  // If previous hook doesn't have deps, always run
+  if (!previousHook.deps) {
+    return true
+  }
+
+  // Check if any dependency has changed
+  return currentHook.deps.some((dep, i) => dep !== previousHook.deps?.[i])
+}
+
 export function useEffect(
   effect: () => void | (() => void),
   deps?: Array<unknown>
@@ -60,18 +82,28 @@ export function runEffects(fiber: Fiber): void {
     fiber,
   })
 
-  if (!fiber.hooks) return
+  if (!fiber.hooks || !fiber.alternate?.hooks) return
 
-  // Run cleanup functions first
-  fiber.hooks.forEach((hook) => {
-    if (isEffectHook(hook) && hook.cleanup) {
+  // Run through hooks
+  fiber.hooks.forEach((hook, index) => {
+    if (!isEffectHook(hook)) return
+
+    const prevHook = fiber.alternate?.hooks?.[index] as EffectHook | undefined
+
+    // Determine if we should run this effect
+    const shouldRun = shouldRunEffect({
+      currentHook: hook,
+      previousHook: prevHook,
+    })
+
+    // Run cleanup if needed (only if we're about to run the effect)
+    if (shouldRun && hook.cleanup) {
       hook.cleanup()
+      hook.cleanup = undefined
     }
-  })
 
-  // Run effects
-  fiber.hooks.forEach((hook) => {
-    if (isEffectHook(hook)) {
+    // Run effect if dependencies changed
+    if (shouldRun) {
       const cleanup = hook.effect()
       if (cleanup && typeof cleanup === 'function') {
         hook.cleanup = cleanup
