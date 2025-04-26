@@ -14,7 +14,7 @@ export function isEffectHook(hook: ExtendedHook): hook is EffectHook {
 }
 
 // Determine if an effect should run based on its dependencies
-export function shouldRunEffect({
+function shouldRunEffect({
   currentHook,
   previousHook,
 }: {
@@ -76,38 +76,51 @@ export function useEffect(
   incrementHookIndex()
 }
 
-// This should be called during commit phase
-export function runEffects(fiber: Fiber): void {
-  console.log('Running effects', {
-    fiber,
-  })
+/**
+ * Recursively runs effects on a fiber and its children
+ */
+export function runEffectsRecursively(fiber: Fiber): void {
+  // Run effects on current fiber if it has hooks
+  if (fiber.hooks && fiber.hooks.length > 0) {
+    // Check if we have a previous fiber with hooks
+    const prevFiber = fiber.alternate
 
-  if (!fiber.hooks || !fiber.alternate?.hooks) return
+    // Process each hook individually
+    fiber.hooks.forEach((hook, index) => {
+      if (!isEffectHook(hook)) return
 
-  // Run through hooks
-  fiber.hooks.forEach((hook, index) => {
-    if (!isEffectHook(hook)) return
+      const effectHook = hook
+      const prevHook = prevFiber?.hooks?.[index] as EffectHook | undefined
 
-    const prevHook = fiber.alternate?.hooks?.[index] as EffectHook | undefined
+      // Use the imported shouldRunEffect function instead of inline logic
+      const shouldRun = shouldRunEffect({
+        currentHook: effectHook,
+        previousHook: prevHook,
+      })
 
-    // Determine if we should run this effect
-    const shouldRun = shouldRunEffect({
-      currentHook: hook,
-      previousHook: prevHook,
-    })
-
-    // Run cleanup if needed (only if we're about to run the effect)
-    if (shouldRun && hook.cleanup) {
-      hook.cleanup()
-      hook.cleanup = undefined
-    }
-
-    // Run effect if dependencies changed
-    if (shouldRun) {
-      const cleanup = hook.effect()
-      if (cleanup && typeof cleanup === 'function') {
-        hook.cleanup = cleanup
+      // Run cleanup if needed (only if we're about to run the effect or unmounting)
+      if (shouldRun && effectHook.cleanup) {
+        effectHook.cleanup()
+        effectHook.cleanup = undefined
       }
-    }
-  })
+
+      // Run effect if dependencies changed
+      if (shouldRun) {
+        const cleanup = effectHook.effect()
+        if (cleanup && typeof cleanup === 'function') {
+          effectHook.cleanup = cleanup
+        }
+      }
+    })
+  }
+
+  // Recursively run effects on children
+  if (fiber.child) {
+    runEffectsRecursively(fiber.child)
+  }
+
+  // Recursively run effects on siblings
+  if (fiber.sibling) {
+    runEffectsRecursively(fiber.sibling)
+  }
 }
