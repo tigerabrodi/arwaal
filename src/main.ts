@@ -2,15 +2,25 @@ import { Arwaal } from './lib'
 
 function Counter() {
   const [count, setCount] = Arwaal.useState({ initial: 0 })
+  const [inputValue, setInputValue] = Arwaal.useState({ initial: '' })
 
-  // always run when count
+  // Track when count changes
   Arwaal.useEffect(() => {
-    console.log('Count:', count)
+    console.log('Count changed:', count)
   }, [count])
 
+  // Runs once on mount
   Arwaal.useEffect(() => {
-    console.log('only runs once')
+    console.log('Counter component mounted')
+    return () => console.log('Counter component unmounted')
   }, [])
+
+  // Track input value changes
+  Arwaal.useEffect(() => {
+    if (inputValue) {
+      console.log('Input value changed:', inputValue)
+    }
+  }, [inputValue])
 
   return Arwaal.createElement({
     type: 'div',
@@ -25,6 +35,26 @@ function Counter() {
         type: 'button',
         props: { onClick: () => setCount((c) => c + 1) },
         children: ['Increment'],
+      }),
+      Arwaal.createElement({
+        type: 'input',
+        props: {
+          type: 'text',
+          value: inputValue,
+          placeholder: 'Enter text here',
+          // Try multiple event handlers to see which one works
+          onChange: (e: Event) => {
+            const value = (e.target as HTMLInputElement).value
+            console.log('Raw input event value:', value)
+            setInputValue(() => value)
+          },
+        },
+        children: [],
+      }),
+      Arwaal.createElement({
+        type: 'p',
+        props: {},
+        children: [`Current input: ${inputValue}`],
       }),
     ],
   })
