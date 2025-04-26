@@ -64,28 +64,52 @@ export function render({
   deletions = []
   nextUnitOfWork = wipRoot
 
-  // Start the work loop
-  requestIdleCallback(workLoop)
+  // Initial trigger
+  scheduleNextIteration()
 }
 
-/**
- * The work loop processes units of work during idle browser time
- */
-function workLoop(deadline: IdleDeadline): void {
-  let shouldYield = false
+// Time slice constants
+const FRAME_LENGTH = 5 // milliseconds per work chunk
+let isWorking = false
 
-  while (nextUnitOfWork && !shouldYield) {
-    nextUnitOfWork = performUnitOfWork({ fiber: nextUnitOfWork })
-    shouldYield = deadline.timeRemaining() < 1
+function workLoop(currentTime = performance.now()): void {
+  // Prevent concurrent execution
+  if (isWorking) return
+  isWorking = true
+
+  const deadline = currentTime + FRAME_LENGTH
+
+  try {
+    // Process work until we need to yield
+    while (nextUnitOfWork && performance.now() < deadline) {
+      nextUnitOfWork = performUnitOfWork({ fiber: nextUnitOfWork })
+    }
+
+    // Commit if all work is done
+    if (!nextUnitOfWork && wipRoot) {
+      commitRoot()
+    }
+  } finally {
+    // Always ensure we clear the working flag
+    isWorking = false
   }
 
-  // If we've finished all work, commit the fiber tree
-  if (!nextUnitOfWork && wipRoot) {
-    commitRoot()
-  }
+  // Always schedule next iteration regardless of work status
+  // This maintains continuous execution
+  scheduleNextIteration()
+}
 
-  // Schedule the next work loop
-  requestIdleCallback(workLoop)
+function scheduleNextIteration(): void {
+  // Prefer requestAnimationFrame for visual updates
+  // With setTimeout fallback for reliability
+  const timeoutId = setTimeout(() => {
+    workLoop(performance.now())
+  }, FRAME_LENGTH)
+
+  requestAnimationFrame((rafTime) => {
+    clearTimeout(timeoutId)
+    workLoop(rafTime)
+  })
 }
 
 /**
