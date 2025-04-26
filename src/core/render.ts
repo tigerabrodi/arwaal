@@ -1,5 +1,6 @@
 import { updateDom } from './dom'
 import { performUnitOfWork } from './fiber'
+import { runEffects } from './hooks'
 import { Element, Fiber } from './types'
 
 export let wipFiber: Fiber | null = null
@@ -94,7 +95,11 @@ function commitRoot(): void {
   // Deletions are handled first to avoid potential DOM conflicts. If you're moving a node to a new position, you want to remove it from its old position before adding it to the new one.
   deletions.forEach((fiber) => commitWork({ fiber }))
 
+  // Commit the work
   commitWork({ fiber: wipRoot!.child })
+
+  // Run effects after committing the work
+  runEffects(wipRoot!)
 
   currentRoot = wipRoot
 

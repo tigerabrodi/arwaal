@@ -3,6 +3,10 @@ import { Arwaal } from './lib'
 function Counter() {
   const [count, setCount] = Arwaal.useState({ initial: 0 })
 
+  Arwaal.useEffect(() => {
+    console.log('Count:', count)
+  }, [count])
+
   return Arwaal.createElement({
     type: 'div',
     props: {},
