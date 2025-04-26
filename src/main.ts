@@ -43,7 +43,7 @@ function Counter() {
           value: inputValue,
           placeholder: 'Enter text here',
           // Try multiple event handlers to see which one works
-          onChange: (e: Event) => {
+          onInput: (e: Event) => {
             const value = (e.target as HTMLInputElement).value
             console.log('Raw input event value:', value)
             setInputValue(() => value)
