@@ -7,7 +7,17 @@ import {
   setWipRoot,
   wipFiber,
 } from '../render'
-import { ExtendedHook } from '../types'
+import { BrandedHook, StateHook } from '../types'
+
+// Type guard for state hooks
+export function isStateHook<T>(hook: unknown): hook is StateHook<T> {
+  return (
+    hook !== null &&
+    typeof hook === 'object' &&
+    '__brand' in hook &&
+    (hook as { __brand: string }).__brand === 'state'
+  )
+}
 
 export function useState<T>({
   initial,
@@ -15,10 +25,11 @@ export function useState<T>({
   initial: T
 }): [T, (action: (state: T) => T) => void] {
   const oldHook = wipFiber?.alternate?.hooks?.[hookIndex] as
-    | ExtendedHook<T>
+    | StateHook<T>
     | undefined
 
-  const hook: ExtendedHook<T> = {
+  const hook: StateHook<T> = {
+    __brand: 'state',
     state: oldHook ? oldHook.state : initial,
     queue: [],
   }
@@ -52,7 +63,7 @@ export function useState<T>({
     setDeletions([])
   }
 
-  wipFiber!.hooks!.push(hook as ExtendedHook<unknown>)
+  wipFiber!.hooks!.push(hook as unknown as BrandedHook<unknown, string>)
   incrementHookIndex()
 
   return [hook.state, setState]

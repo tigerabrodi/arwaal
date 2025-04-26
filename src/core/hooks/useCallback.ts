@@ -1,16 +1,14 @@
 import { hookIndex, incrementHookIndex, wipFiber } from '../render'
-import { ExtendedHook } from '../types'
+import { BrandedHook, CallbackHook } from '../types'
 
-// CallbackHook extends ExtendedHook with callback function
-export interface CallbackHook<T> extends ExtendedHook<T> {
-  deps: Array<unknown> | undefined
-}
-
-// Type guard to check if a hook is a CallbackHook
-export function isCallbackHook(
-  hook: ExtendedHook<unknown>
-): hook is CallbackHook<unknown> {
-  return 'deps' in hook && typeof hook.state === 'function'
+// Type guard to check if a hook has the callback brand
+export function isCallbackHook(hook: unknown): hook is CallbackHook<unknown> {
+  return (
+    hook !== null &&
+    typeof hook === 'object' &&
+    '__brand' in hook &&
+    (hook as { __brand: string }).__brand === 'callback'
+  )
 }
 
 export function useCallback<T extends (...args: Array<unknown>) => unknown>(
@@ -18,10 +16,13 @@ export function useCallback<T extends (...args: Array<unknown>) => unknown>(
   deps?: Array<unknown>
 ): T {
   // Cast to specific hook type
-  const oldHook = wipFiber?.alternate?.hooks?.[hookIndex]
+  const oldHook = wipFiber?.alternate?.hooks?.[hookIndex] as
+    | CallbackHook<T>
+    | undefined
 
   // Create our hook
   const hook: CallbackHook<T> = {
+    __brand: 'callback',
     state: callback,
     queue: [],
     deps,
@@ -35,12 +36,12 @@ export function useCallback<T extends (...args: Array<unknown>) => unknown>(
 
     if (!hasDepsChanged) {
       // No change in deps, return the memoized callback
-      hook.state = oldHook.state as T
+      hook.state = oldHook.state
     }
   }
 
-  // Explicitly cast to satisfy TypeScript
-  wipFiber!.hooks!.push(hook as unknown as ExtendedHook<unknown>)
+  // Add to hooks array
+  wipFiber!.hooks!.push(hook as unknown as BrandedHook<unknown, string>)
   incrementHookIndex()
 
   return hook.state

@@ -1,16 +1,16 @@
 import { hookIndex, incrementHookIndex, wipFiber } from '../render'
-import { ExtendedHook, Fiber } from '../types'
-
-// Effect hook extends ExtendedHook with null state
-export interface EffectHook extends ExtendedHook {
-  effect: () => void | (() => void)
-  cleanup: (() => void) | undefined
-  deps: Array<unknown> | undefined
-}
+import { BrandedHook, EffectHook, Fiber } from '../types'
 
 // Type guard to check if a hook is an EffectHook
-export function isEffectHook(hook: ExtendedHook): hook is EffectHook {
-  return 'effect' in hook && typeof hook.effect === 'function'
+export function isEffectHook(hook: unknown): hook is EffectHook {
+  return (
+    hook !== null &&
+    typeof hook === 'object' &&
+    '__brand' in hook &&
+    (hook as { __brand: string }).__brand === 'effect' &&
+    'effect' in hook &&
+    typeof (hook as { effect: unknown }).effect === 'function'
+  )
 }
 
 // Determine if an effect should run based on its dependencies
@@ -45,34 +45,31 @@ export function useEffect(
     | undefined
 
   const hook: EffectHook = {
+    __brand: 'effect',
     state: null, // Effect hooks don't use state
-    queue: [], // Effect hooks don't use queue
+    queue: [],
     effect,
     cleanup: undefined,
     deps,
   }
 
-  if (oldHook) {
-    if (isEffectHook(oldHook)) {
-      // If no deps provided, always run effect
-      // If deps provided, check if they've changed
-      const hasDepsChanged =
-        !deps ||
-        !oldHook.deps ||
-        deps.some((dep, i) => dep !== oldHook.deps?.[i])
+  if (oldHook && isEffectHook(oldHook)) {
+    // If no deps provided, always run effect
+    // If deps provided, check if they've changed
+    const hasDepsChanged =
+      !deps || !oldHook.deps || deps.some((dep, i) => dep !== oldHook.deps?.[i])
 
-      if (hasDepsChanged) {
-        // Save cleanup function for later execution
-        hook.cleanup = oldHook.cleanup
-      } else {
-        // No change in deps, skip this effect
-        hook.cleanup = oldHook.cleanup
-        hook.effect = oldHook.effect
-      }
+    if (hasDepsChanged) {
+      // Save cleanup function for later execution
+      hook.cleanup = oldHook.cleanup
+    } else {
+      // No change in deps, skip this effect
+      hook.cleanup = oldHook.cleanup
+      hook.effect = oldHook.effect
     }
   }
 
-  wipFiber!.hooks!.push(hook)
+  wipFiber!.hooks!.push(hook as unknown as BrandedHook<unknown, string>)
   incrementHookIndex()
 }
 
@@ -92,7 +89,7 @@ export function runEffectsRecursively(fiber: Fiber): void {
       const effectHook = hook
       const prevHook = prevFiber?.hooks?.[index] as EffectHook | undefined
 
-      // Use the imported shouldRunEffect function instead of inline logic
+      // Use the shouldRunEffect function
       const shouldRun = shouldRunEffect({
         currentHook: effectHook,
         previousHook: prevHook,
