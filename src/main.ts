@@ -5,7 +5,12 @@ function Counter() {
 
   Arwaal.useEffect(() => {
     console.log('Count:', count)
+    ref.current = count
   }, [count])
+
+  const ref = Arwaal.useRef<number>(null)
+
+  console.log('Ref:', ref)
 
   return Arwaal.createElement({
     type: 'div',

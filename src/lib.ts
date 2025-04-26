@@ -1,5 +1,5 @@
 import { createElement } from './core/createElement'
-import { useEffect, useState } from './core/hooks'
+import { useEffect, useRef, useState } from './core/hooks'
 import { render } from './core/render'
 
 export { createElement, render, useEffect, useState }
@@ -9,4 +9,5 @@ export const Arwaal = {
   render,
   useEffect,
   useState,
+  useRef,
 }
