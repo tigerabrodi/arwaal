@@ -21,6 +21,7 @@ function Counter() {
       console.log('Input value changed:', inputValue)
     }
   }, [inputValue])
+
   return (
     <div>
       <h1>Count: {count}</h1>
@@ -29,7 +30,7 @@ function Counter() {
         type="text"
         value={inputValue}
         placeholder="Enter text here"
-        onInput={(e: Event) => {
+        onInput={(e) => {
           const value = (e.target as HTMLInputElement).value
           console.log('Raw input event value:', value)
           setInputValue(() => value)
