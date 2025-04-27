@@ -1,12 +1,12 @@
 // fiber.test.ts
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Element as ArwaalElement, Fiber } from '../core/types'
-import { createElement } from '../createElement'
-import * as dom from '../dom'
-import { performUnitOfWork, reconcileChildren } from '../fiber'
+import { createElement } from '../core/createElement'
+import * as dom from '../core/dom'
+import { performUnitOfWork, reconcileChildren } from '../core/fiber'
 
 // Mock DOM operations
-vi.mock('../dom', () => ({
+vi.mock('../core/dom', () => ({
   createDom: vi.fn(() => document.createElement('div')),
   updateDom: vi.fn(),
 }))
