@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createElement } from '../createElement'
+import { createElement } from '../core/createElement'
 
 describe('createElement', () => {
   it('should create an element with the correct type and props', () => {
